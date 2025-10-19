@@ -125,6 +125,12 @@
         "title": "export TXT",
         "category": "noveler",
         "shortTitle": "导出txt到单独文件"
+      },
+      {
+        "command": "noveler.aiChat",
+        "title": "AI 助手",
+        "category": "noveler",
+        "icon": "$(comment-discussion)"
       }
     ],
     "keybindings": [
@@ -147,6 +153,15 @@
         "when": "editorTextFocus"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "noveler.aiChat",
+          "group": "navigation",
+          "when": "editorTextFocus"
+        }
+      ]
+    },
     "colors": [
       {
         "id": "number",
@@ -402,6 +417,24 @@
           "default": false,
           "markdownDescription": "是否开启输入记录(若开启将输入记录保存到.noveler/record) 默认关闭",
           "scope": "resource"
+        },
+        "noveler.ai.apiUrl": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "AI API 的 URL 地址",
+          "scope": "application"
+        },
+        "noveler.ai.apiKey": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "AI API 的密钥",
+          "scope": "application"
+        },
+        "noveler.ai.model": {
+          "type": "string",
+          "default": "gpt-3.5-turbo",
+          "markdownDescription": "AI 模型名称",
+          "scope": "application"
         }
       }
     }

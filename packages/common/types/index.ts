@@ -76,7 +76,7 @@ export interface IConfig {
   typingRecord: boolean
 }
 
-export type NovelerRouter = '/' | '/preview' | '/panel'
+export type NovelerRouter = '/' | '/preview' | '/panel' | '/ai-chat'
 export interface PreviewDto {
   /**if undefined will not take effect */
   text?: string
@@ -125,4 +125,41 @@ export enum Commands {
   ExportTXT = 'noveler.exportTXT',
   Preview = 'noveler.preview',
   DeletePrefix = 'noveler.deletePrefix',
+  AIChat = 'noveler.aiChat',
+}
+
+export interface AIChatDto {
+  messages: ChatMessage[]
+  themeKind?: Theme
+}
+
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  timestamp: number
+  reasoning_content?: string // 深度思考内容
+}
+
+export interface AIChatExtRecDto {
+  type: 'message' | 'clear' | 'getConfig' | 'saveConfig' | 'stop'
+  message?: ChatMessage
+  config?: AIConfig
+}
+
+// 流式消息类型
+export interface AIStreamDto {
+  type: 'stream'
+  messageId: string
+  content: string
+  isComplete: boolean
+  themeKind?: Theme
+  reasoning_content?: string // 深度思考内容
+  isReasoningComplete?: boolean // 深度思考是否完成
+}
+
+export interface AIConfig {
+  apiUrl: string
+  apiKey: string
+  model: string
 }
