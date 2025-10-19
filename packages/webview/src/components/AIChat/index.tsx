@@ -16,6 +16,25 @@ const AIChat: React.FC = () => {
   const [apiUrl, setApiUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState('gpt-3.5-turbo')
+  // 提示词配置状态，初始化为默认结构，将从配置中加载
+  const [promptConfig, setPromptConfig] = useState<any>({
+    randomName: {
+      withSelection: '',
+      withoutSelection: '',
+    },
+    wordReplace: {
+      withSelection: '',
+      withoutSelection: '',
+    },
+    continueWriting: {
+      withSelection: '',
+      withoutSelection: '',
+    },
+    characterDesign: {
+      withSelection: '',
+      withoutSelection: '',
+    },
+  })
   // 存储每个消息的深度思考内容收起状态
   const [reasoningCollapsed, setReasoningCollapsed] = useState<{
     [key: string]: boolean
@@ -33,8 +52,9 @@ const AIChat: React.FC = () => {
           console.error('VSCode API not available')
           return
         }
-        // 请求获取 AI 配置
+        // 请求获取 AI 配置和提示词配置
         vscode.postMessage({ type: 'getConfig' })
+        vscode.postMessage({ type: 'getPromptConfig' })
       } catch (error) {
         console.error('Failed to initialize messages:', error)
       }
@@ -110,6 +130,54 @@ const AIChat: React.FC = () => {
           setApiUrl(message.config.apiUrl || '')
           setApiKey(message.config.apiKey || '')
           setModel(message.config.model || '')
+        }
+      }
+      // 处理提示词配置消息
+      else if (message && message.type === 'promptConfig') {
+        if (message.promptConfig) {
+          // 合并默认配置和用户配置，确保所有必需的键都存在
+          setPromptConfig((prev: any) => ({
+            randomName: {
+              withSelection:
+                message.promptConfig.randomName?.withSelection ||
+                prev.randomName?.withSelection ||
+                '',
+              withoutSelection:
+                message.promptConfig.randomName?.withoutSelection ||
+                prev.randomName?.withoutSelection ||
+                '',
+            },
+            wordReplace: {
+              withSelection:
+                message.promptConfig.wordReplace?.withSelection ||
+                prev.wordReplace?.withSelection ||
+                '',
+              withoutSelection:
+                message.promptConfig.wordReplace?.withoutSelection ||
+                prev.wordReplace?.withoutSelection ||
+                '',
+            },
+            continueWriting: {
+              withSelection:
+                message.promptConfig.continueWriting?.withSelection ||
+                prev.continueWriting?.withSelection ||
+                '',
+              withoutSelection:
+                message.promptConfig.continueWriting?.withoutSelection ||
+                prev.continueWriting?.withoutSelection ||
+                '',
+            },
+            characterDesign: {
+              withSelection:
+                message.promptConfig.characterDesign?.withSelection ||
+                prev.characterDesign?.withSelection ||
+                '',
+              withoutSelection:
+                message.promptConfig.characterDesign?.withoutSelection ||
+                prev.characterDesign?.withoutSelection ||
+                '',
+            },
+          }))
         }
       }
     }
@@ -193,6 +261,24 @@ const AIChat: React.FC = () => {
     }))
   }
 
+  // 配置面板标签页状态
+  const [configTab, setConfigTab] = useState<'api' | 'prompt'>('api')
+
+  // 更新提示词配置的函数
+  const updatePromptConfig = (
+    category: string,
+    field: 'withSelection' | 'withoutSelection',
+    value: string,
+  ) => {
+    setPromptConfig((prev: any) => ({
+      ...prev,
+      [category]: {
+        ...prev[category as keyof typeof prev],
+        [field]: value,
+      },
+    }))
+  }
+
   return (
     <div className='ai-chat-container'>
       <div className='ai-chat-header'>
@@ -211,59 +297,230 @@ const AIChat: React.FC = () => {
 
       {showConfig && (
         <div className='config-panel'>
-          <h3>AI 配置</h3>
-          <div className='config-form'>
-            <div className='form-group'>
-              <label htmlFor='apiUrl'>API URL:</label>
-              <input
-                id='apiUrl'
-                type='text'
-                value={apiUrl}
-                onChange={(e) => setApiUrl(e.target.value)}
-                placeholder='https://api.openai.com/v1/chat/completions'
-              />
+          <div className='config-tabs'>
+            <button
+              className={`tab-button ${configTab === 'api' ? 'active' : ''}`}
+              onClick={() => setConfigTab('api')}>
+              API 配置
+            </button>
+            <button
+              className={`tab-button ${configTab === 'prompt' ? 'active' : ''}`}
+              onClick={() => setConfigTab('prompt')}>
+              提示词配置
+            </button>
+          </div>
+
+          {configTab === 'api' && (
+            <div className='config-content'>
+              <h3>AI 配置</h3>
+              <div className='config-form'>
+                <div className='form-group'>
+                  <label htmlFor='apiUrl'>API URL:</label>
+                  <input
+                    id='apiUrl'
+                    type='text'
+                    value={apiUrl}
+                    onChange={(e) => setApiUrl(e.target.value)}
+                    placeholder='https://api.openai.com/v1/chat/completions'
+                  />
+                </div>
+                <div className='form-group'>
+                  <label htmlFor='apiKey'>API 密钥:</label>
+                  <input
+                    id='apiKey'
+                    type='password'
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder='您的 API 密钥'
+                  />
+                </div>
+                <div className='form-group'>
+                  <label htmlFor='model'>模型:</label>
+                  <input
+                    id='model'
+                    type='text'
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    placeholder='gpt-3.5-turbo'
+                  />
+                </div>
+              </div>
             </div>
-            <div className='form-group'>
-              <label htmlFor='apiKey'>API 密钥:</label>
-              <input
-                id='apiKey'
-                type='password'
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder='您的 API 密钥'
-              />
+          )}
+
+          {configTab === 'prompt' && (
+            <div className='config-content'>
+              <h3>提示词配置</h3>
+              <div className='prompt-config-form'>
+                <div className='prompt-category'>
+                  <h4>随机取名</h4>
+                  <div className='form-group'>
+                    <label>有选中文本时:</label>
+                    <textarea
+                      value={promptConfig.randomName.withSelection}
+                      onChange={(e) =>
+                        updatePromptConfig(
+                          'randomName',
+                          'withSelection',
+                          e.target.value,
+                        )
+                      }
+                      placeholder='请根据内容：${selectedText}，随机取十个适合小说的人物姓名'
+                      rows={3}
+                    />
+                  </div>
+                  <div className='form-group'>
+                    <label>无选中文本时:</label>
+                    <textarea
+                      value={promptConfig.randomName.withoutSelection}
+                      onChange={(e) =>
+                        updatePromptConfig(
+                          'randomName',
+                          'withoutSelection',
+                          e.target.value,
+                        )
+                      }
+                      placeholder='请随机生成十个适合小说的人物姓名'
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className='prompt-category'>
+                  <h4>词汇替换</h4>
+                  <div className='form-group'>
+                    <label>有选中文本时:</label>
+                    <textarea
+                      value={promptConfig.wordReplace.withSelection}
+                      onChange={(e) =>
+                        updatePromptConfig(
+                          'wordReplace',
+                          'withSelection',
+                          e.target.value,
+                        )
+                      }
+                      placeholder='[${paragraphText}]\n${selectedText}能替换成什么？'
+                      rows={3}
+                    />
+                  </div>
+                  <div className='form-group'>
+                    <label>无选中文本时:</label>
+                    <textarea
+                      value={promptConfig.wordReplace.withoutSelection}
+                      onChange={(e) =>
+                        updatePromptConfig(
+                          'wordReplace',
+                          'withoutSelection',
+                          e.target.value,
+                        )
+                      }
+                      placeholder='请为当前段落提供一些词汇替换建议：\n${paragraphText}'
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className='prompt-category'>
+                  <h4>续写</h4>
+                  <div className='form-group'>
+                    <label>有选中文本时:</label>
+                    <textarea
+                      value={promptConfig.continueWriting.withSelection}
+                      onChange={(e) =>
+                        updatePromptConfig(
+                          'continueWriting',
+                          'withSelection',
+                          e.target.value,
+                        )
+                      }
+                      placeholder='请根据选中的内容继续续写：\n${selectedText}'
+                      rows={3}
+                    />
+                  </div>
+                  <div className='form-group'>
+                    <label>无选中文本时:</label>
+                    <textarea
+                      value={promptConfig.continueWriting.withoutSelection}
+                      onChange={(e) =>
+                        updatePromptConfig(
+                          'continueWriting',
+                          'withoutSelection',
+                          e.target.value,
+                        )
+                      }
+                      placeholder='请根据以下内容继续续写：\n${contentText}'
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className='prompt-category'>
+                  <h4>角色设计</h4>
+                  <div className='form-group'>
+                    <label>有选中文本时:</label>
+                    <textarea
+                      value={promptConfig.characterDesign.withSelection}
+                      onChange={(e) =>
+                        updatePromptConfig(
+                          'characterDesign',
+                          'withSelection',
+                          e.target.value,
+                        )
+                      }
+                      placeholder='请根据以下内容设计一个角色：\n${selectedText}'
+                      rows={3}
+                    />
+                  </div>
+                  <div className='form-group'>
+                    <label>无选中文本时:</label>
+                    <textarea
+                      value={promptConfig.characterDesign.withoutSelection}
+                      onChange={(e) =>
+                        updatePromptConfig(
+                          'characterDesign',
+                          'withoutSelection',
+                          e.target.value,
+                        )
+                      }
+                      placeholder='帮我随机设计一个角色'
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className='prompt-note'>
+                <p>可用占位符：</p>
+                <ul>
+                  <li>${'{selectedText}'} - 选中的文本</li>
+                  <li>${'{selectedTextWithContext}'} - 选中的文本及上下文</li>
+                  <li>${'{contentText}'} - 全文</li>
+                  <li>${'{paragraphText}'} - 当前段落</li>
+                </ul>
+              </div>
             </div>
-            <div className='form-group'>
-              <label htmlFor='model'>模型:</label>
-              <input
-                id='model'
-                type='text'
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder='gpt-3.5-turbo'
-              />
-            </div>
-            <div className='form-actions'>
-              <button
-                className='save-config-button'
-                onClick={() => {
-                  const vscode = (window as any).vscode
-                  if (vscode) {
-                    vscode.postMessage({
-                      type: 'saveConfig',
-                      config: { apiUrl, apiKey, model },
-                    })
-                  }
-                  setShowConfig(false)
-                }}>
-                保存配置
-              </button>
-              <button
-                className='cancel-config-button'
-                onClick={() => setShowConfig(false)}>
-                取消
-              </button>
-            </div>
+          )}
+
+          <div className='form-actions'>
+            <button
+              className='save-config-button'
+              onClick={() => {
+                const vscode = (window as any).vscode
+                if (vscode) {
+                  vscode.postMessage({
+                    type: 'saveConfig',
+                    config: { apiUrl, apiKey, model },
+                    promptConfig: promptConfig,
+                  })
+                }
+                setShowConfig(false)
+              }}>
+              保存配置
+            </button>
+            <button
+              className='cancel-config-button'
+              onClick={() => setShowConfig(false)}>
+              取消
+            </button>
           </div>
           <div className='config-note'>
             <p>

@@ -126,6 +126,10 @@ export enum Commands {
   Preview = 'noveler.preview',
   DeletePrefix = 'noveler.deletePrefix',
   AIChat = 'noveler.aiChat',
+  AIRandomName = 'noveler.aiRandomName',
+  AIWordReplace = 'noveler.aiWordReplace',
+  AIContinueWriting = 'noveler.aiContinueWriting',
+  AICharacterDesign = 'noveler.aiCharacterDesign',
 }
 
 export interface AIChatDto {
@@ -162,4 +166,22 @@ export interface AIConfig {
   apiUrl: string
   apiKey: string
   model: string
+  prompts?: {
+    randomName?: {
+      withSelection?: string
+      withoutSelection?: string
+    }
+    wordReplace?: {
+      withSelection?: string
+      withoutSelection?: string
+    }
+    continueWriting?: {
+      withSelection?: string
+      withoutSelection?: string
+    }
+    characterDesign?: {
+      withSelection?: string
+      withoutSelection?: string
+    }
+  }
 }

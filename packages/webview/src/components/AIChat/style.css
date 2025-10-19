@@ -87,10 +87,82 @@
   background-color: var(--vscode-editor-background);
 }
 
+.config-tabs {
+  display: flex;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.tab-button {
+  background-color: transparent;
+  color: var(--vscode-foreground);
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.tab-button.active {
+  border-bottom-color: var(--vscode-textLink-foreground);
+  color: var(--vscode-textLink-foreground);
+}
+
+.tab-button:hover:not(.active) {
+  color: var(--vscode-textLink-activeForeground);
+}
+
+.config-content {
+  margin-bottom: 16px;
+}
+
 .config-panel h3 {
   margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: 600;
+}
+
+.prompt-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.prompt-category {
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.prompt-category h4 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-textLink-foreground);
+}
+
+.prompt-note {
+  margin-top: 16px;
+  padding: 8px;
+  background-color: var(--vscode-textBlockQuote-background);
+  border-left: 4px solid var(--vscode-textBlockQuote-border);
+  font-size: 12px;
+}
+
+.prompt-note p {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.prompt-note ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.prompt-note li {
+  margin-bottom: 4px;
+  font-family: var(--vscode-editor-font-family);
 }
 
 .config-form {
@@ -121,6 +193,23 @@
 }
 
 .form-group input:focus {
+  border-color: var(--vscode-focusBorder);
+  outline: none;
+}
+
+.form-group textarea {
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  resize: vertical;
+  width: 100%;
+}
+
+.form-group textarea:focus {
   border-color: var(--vscode-focusBorder);
   outline: none;
 }
@@ -218,6 +307,8 @@
 .message-content {
   margin-bottom: 4px;
   line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .message-content.loading {

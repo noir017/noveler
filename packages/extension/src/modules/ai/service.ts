@@ -13,6 +13,7 @@ export const getAIConfig = (): AIConfig => {
     apiUrl: config.get<string>('ai.apiUrl', ''),
     apiKey: config.get<string>('ai.apiKey', ''),
     model: config.get<string>('ai.model', ''),
+    prompts: config.get<object>('ai.prompts', {}),
   }
 }
 

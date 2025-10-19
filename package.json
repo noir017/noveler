@@ -128,9 +128,29 @@
       },
       {
         "command": "noveler.aiChat",
-        "title": "AI 助手",
+        "title": "打开对话页面",
         "category": "noveler",
         "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "noveler.aiRandomName",
+        "title": "随机取名",
+        "category": "noveler"
+      },
+      {
+        "command": "noveler.aiWordReplace",
+        "title": "词汇替换",
+        "category": "noveler"
+      },
+      {
+        "command": "noveler.aiContinueWriting",
+        "title": "续写",
+        "category": "noveler"
+      },
+      {
+        "command": "noveler.aiCharacterDesign",
+        "title": "角色设计",
+        "category": "noveler"
       }
     ],
     "keybindings": [
@@ -153,12 +173,41 @@
         "when": "editorTextFocus"
       }
     ],
+    "submenus": [
+      {
+        "id": "noveler.ai.submenu",
+        "label": "NOVELER AI助手"
+      }
+    ],
     "menus": {
       "editor/context": [
         {
-          "command": "noveler.aiChat",
+          "submenu": "noveler.ai.submenu",
           "group": "navigation",
-          "when": "editorTextFocus"
+          "when": "editorTextFocus",
+          "label": "NOVELER AI助手"
+        }
+      ],
+      "noveler.ai.submenu": [
+        {
+          "command": "noveler.aiChat",
+          "group": "ai@0"
+        },
+        {
+          "command": "noveler.aiRandomName",
+          "group": "ai@1"
+        },
+        {
+          "command": "noveler.aiWordReplace",
+          "group": "ai@2"
+        },
+        {
+          "command": "noveler.aiContinueWriting",
+          "group": "ai@3"
+        },
+        {
+          "command": "noveler.aiCharacterDesign",
+          "group": "ai@4"
         }
       ]
     },
@@ -432,9 +481,90 @@
         },
         "noveler.ai.model": {
           "type": "string",
-          "default": "gpt-3.5-turbo",
+          "default": "",
           "markdownDescription": "AI 模型名称",
           "scope": "application"
+        },
+        "noveler.ai.prompts": {
+          "type": "object",
+          "default": {
+            "randomName": {
+              "withSelection": "请根据内容：${selectedText}，随机取十个适合小说的人物姓名",
+              "withoutSelection": "请随机生成十个适合小说的人物姓名"
+            },
+            "wordReplace": {
+              "withSelection": "[${paragraphText}]\n${selectedText}能替换成什么？",
+              "withoutSelection": "请为当前段落提供一些词汇替换建议：\n${paragraphText}"
+            },
+            "continueWriting": {
+              "withSelection": "请根据选中的内容继续续写：\n${selectedText}",
+              "withoutSelection": "请根据以下内容继续续写：\n${contentText}"
+            },
+            "characterDesign": {
+              "withSelection": "请根据以下内容设计一个角色：\n${selectedText}",
+              "withoutSelection": "帮我随机设计一个角色"
+            }
+          },
+          "markdownDescription": "AI 提示词配置，可使用占位符：${selectedText}（选中文本）、${selectedTextWithContext}（选中文本及上下文）、${contentText}（全文）、${paragraphText}（当前段落）",
+          "scope": "application",
+          "properties": {
+            "randomName": {
+              "type": "object",
+              "markdownDescription": "随机取名提示词",
+              "properties": {
+                "withSelection": {
+                  "type": "string",
+                  "markdownDescription": "有选中文本时的提示词"
+                },
+                "withoutSelection": {
+                  "type": "string",
+                  "markdownDescription": "无选中文本时的提示词"
+                }
+              }
+            },
+            "wordReplace": {
+              "type": "object",
+              "markdownDescription": "词汇替换提示词",
+              "properties": {
+                "withSelection": {
+                  "type": "string",
+                  "markdownDescription": "有选中文本时的提示词"
+                },
+                "withoutSelection": {
+                  "type": "string",
+                  "markdownDescription": "无选中文本时的提示词"
+                }
+              }
+            },
+            "continueWriting": {
+              "type": "object",
+              "markdownDescription": "续写提示词",
+              "properties": {
+                "withSelection": {
+                  "type": "string",
+                  "markdownDescription": "有选中文本时的提示词"
+                },
+                "withoutSelection": {
+                  "type": "string",
+                  "markdownDescription": "无选中文本时的提示词"
+                }
+              }
+            },
+            "characterDesign": {
+              "type": "object",
+              "markdownDescription": "角色设计提示词",
+              "properties": {
+                "withSelection": {
+                  "type": "string",
+                  "markdownDescription": "有选中文本时的提示词"
+                },
+                "withoutSelection": {
+                  "type": "string",
+                  "markdownDescription": "无选中文本时的提示词"
+                }
+              }
+            }
+          }
         }
       }
     }
