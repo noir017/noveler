@@ -1,3 +1,12 @@
+## [1.4.13](https://github.com/lz37/noveler/compare/v1.4.12...v1.4.13) (2025-10-19)
+
+
+### Bug Fixes
+
+* 优化ai部分功能以及配置 ([a1c4dca](https://github.com/lz37/noveler/commit/a1c4dca2acc9a6135cf8fc657ca509c4ebf9e17c))
+
+
+
 ## 1.4.12 (2025-10-19)
 
 
