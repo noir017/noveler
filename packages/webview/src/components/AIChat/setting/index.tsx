@@ -188,14 +188,16 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({ isVisible, onClose }) => {
         </button>
       </div>
 
-      {configTab === 'api' && <ApiConfig ref={apiConfigRef} />}
+      <div style={{ display: configTab === 'api' ? 'block' : 'none' }}>
+        <ApiConfig ref={apiConfigRef} />
+      </div>
 
-      {configTab === 'prompt' && (
+      <div style={{ display: configTab === 'prompt' ? 'block' : 'none' }}>
         <PromptConfig
           promptConfig={promptConfig}
           updatePromptConfig={updatePromptConfig}
         />
-      )}
+      </div>
 
       <div className='form-actions'>
         <button className='save-config-button' onClick={handleSaveConfig}>

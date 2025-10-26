@@ -33,6 +33,15 @@ const PromptConfig: React.FC<PromptConfigProps> = ({
   return (
     <div className='config-content'>
       <h3>提示词配置</h3>
+      <div className='config-note'>
+        <p>可用占位符：</p>
+        <ul>
+          <li>${'{selectedText}'} - 选中的文本</li>
+          <li>${'{selectedTextWithContext}'} - 选中的文本及上下文</li>
+          <li>${'{contentText}'} - 全文</li>
+          <li>${'{paragraphText}'} - 当前段落</li>
+        </ul>
+      </div>
       <div className='prompt-config-form'>
         <div className='prompt-category'>
           <h4>随机取名</h4>
@@ -169,15 +178,6 @@ const PromptConfig: React.FC<PromptConfigProps> = ({
             />
           </div>
         </div>
-      </div>
-      <div className='prompt-note'>
-        <p>可用占位符：</p>
-        <ul>
-          <li>${'{selectedText}'} - 选中的文本</li>
-          <li>${'{selectedTextWithContext}'} - 选中的文本及上下文</li>
-          <li>${'{contentText}'} - 全文</li>
-          <li>${'{paragraphText}'} - 当前段落</li>
-        </ul>
       </div>
     </div>
   )
