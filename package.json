@@ -467,23 +467,82 @@
           "markdownDescription": "是否开启输入记录(若开启将输入记录保存到.noveler/record) 默认关闭",
           "scope": "resource"
         },
-        "noveler.ai.apiUrl": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "AI API 的 URL 地址",
-          "scope": "application"
+        "noveler.ai.apiProviders": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "AI API 提供商列表",
+          "scope": "resource",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "markdownDescription": "提供商的唯一标识符"
+              },
+              "name": {
+                "type": "string",
+                "markdownDescription": "提供商的显示名称"
+              },
+              "apiUrl": {
+                "type": "string",
+                "markdownDescription": "API 的 URL 地址"
+              },
+              "apiKey": {
+                "type": "string",
+                "markdownDescription": "API 的密钥"
+              },
+              "models": {
+                "type": "array",
+                "markdownDescription": "该提供商支持的模型列表",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "markdownDescription": "模型的唯一标识符"
+                    },
+                    "name": {
+                      "type": "string",
+                      "markdownDescription": "模型的显示名称"
+                    },
+                    "isActive": {
+                      "type": "boolean",
+                      "markdownDescription": "模型是否激活",
+                      "default": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ]
+                }
+              },
+              "isActive": {
+                "type": "boolean",
+                "markdownDescription": "提供商是否激活",
+                "default": true
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "apiUrl",
+              "apiKey",
+              "models"
+            ]
+          }
         },
-        "noveler.ai.apiKey": {
+        "noveler.ai.selectedProviderId": {
           "type": "string",
           "default": "",
-          "markdownDescription": "AI API 的密钥",
-          "scope": "application"
+          "markdownDescription": "当前选中的API提供商ID",
+          "scope": "resource"
         },
-        "noveler.ai.model": {
+        "noveler.ai.selectedModelId": {
           "type": "string",
           "default": "",
-          "markdownDescription": "AI 模型名称",
-          "scope": "application"
+          "markdownDescription": "当前选中的模型ID",
+          "scope": "resource"
         },
         "noveler.ai.prompts": {
           "type": "object",
@@ -506,7 +565,7 @@
             }
           },
           "markdownDescription": "AI 提示词配置，可使用占位符：${selectedText}（选中文本）、${selectedTextWithContext}（选中文本及上下文）、${contentText}（全文）、${paragraphText}（当前段落）",
-          "scope": "application",
+          "scope": "resource",
           "properties": {
             "randomName": {
               "type": "object",

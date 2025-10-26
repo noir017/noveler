@@ -1,7 +1,14 @@
 import * as vscode from 'vscode'
 import * as https from 'https'
 import * as http from 'http'
-import { ChatMessage, AIConfig, AIStreamDto, Theme } from 'common/types'
+import {
+  ChatMessage,
+  AIConfig,
+  AIStreamDto,
+  Theme,
+  ApiProvider,
+  Model,
+} from 'common/types'
 
 // 当前HTTP请求
 let currentRequest: http.ClientRequest | undefined = undefined
@@ -9,11 +16,27 @@ let currentRequest: http.ClientRequest | undefined = undefined
 // 获取 AI 配置
 export const getAIConfig = (): AIConfig => {
   const config = vscode.workspace.getConfiguration('noveler')
+
+  // 获取新的多提供商配置
+  const apiProviders = config.get<ApiProvider[]>('ai.apiProviders', [])
+  const selectedProviderId = config.get<string>('ai.selectedProviderId', '')
+  const selectedModelId = config.get<string>('ai.selectedModelId', '')
+
+  const prompts = config.get<object>('ai.prompts', {})
+
+  // 如果有新的多提供商配置，优先使用
+  if (apiProviders && apiProviders.length > 0) {
+    return {
+      apiProviders,
+      selectedProviderId,
+      selectedModelId,
+      prompts,
+    }
+  }
+
+  // 否则使用原有配置
   return {
-    apiUrl: config.get<string>('ai.apiUrl', ''),
-    apiKey: config.get<string>('ai.apiKey', ''),
-    model: config.get<string>('ai.model', ''),
-    prompts: config.get<object>('ai.prompts', {}),
+    prompts,
   }
 }
 
@@ -47,7 +70,6 @@ const sendStreamMessage = (
   content: string,
   reasoningContent: string,
   isComplete: boolean,
-  isReasoningComplete: boolean,
   themeKind: Theme,
 ) => {
   const streamDto: AIStreamDto = {
@@ -56,7 +78,6 @@ const sendStreamMessage = (
     content,
     reasoning_content: reasoningContent,
     isComplete,
-    isReasoningComplete,
     themeKind,
   }
   panel.webview.postMessage(streamDto)
@@ -96,36 +117,71 @@ export const newAIResponse = async (
 ) => {
   const aiConfig = getAIConfig()
 
-  // 如果配置了 API，则调用真实 API
-  if (aiConfig.apiUrl && aiConfig.apiKey) {
+  // 获取当前使用的API URL、API Key和模型
+  let apiUrl = ''
+  let apiKey = ''
+  let model = ''
+  const themeKind = colorThemeKind2Theme(vscode.window.activeColorTheme.kind)
+  // 如果有新的多提供商配置，使用选中的提供商和模型
+  if (aiConfig.apiProviders && aiConfig.apiProviders.length > 0) {
+    const selectedProvider = aiConfig.apiProviders.find(
+      (provider) => provider.id === aiConfig.selectedProviderId,
+    )
+
+    if (selectedProvider) {
+      apiUrl = selectedProvider.apiUrl
+      apiKey = selectedProvider.apiKey
+
+      // 如果有选中的模型，使用它；否则使用提供商的第一个模型
+      if (aiConfig.selectedModelId) {
+        const selectedModel = selectedProvider.models.find(
+          (model) => model.id === aiConfig.selectedModelId,
+        )
+        model = selectedModel ? selectedModel.name : ''
+      } else if (selectedProvider.models.length > 0) {
+        model = selectedProvider.models[0].name
+      }
+    }
+  } else {
+    // 没配置提供商
+    sendErrorMessage(panel, messages, '没有配置 AI 提供商', themeKind)
+    return
+  }
+
+  // 如果配置了 API
+  if (apiUrl && apiKey) {
     try {
       // 创建一个空的AI消息，用于流式更新
       const aiMessageId = (Date.now() + 1).toString()
       let aiContent = ''
       let reasoningContent = '' // 添加深度思考内容变量
-      let isReasoningComplete = false // 添加深度思考完成标志
 
       // 发送初始空消息到webview，开始流式响应
-      const themeKind = colorThemeKind2Theme(
-        vscode.window.activeColorTheme.kind,
-      )
-      sendStreamMessage(panel, aiMessageId, '', '', false, false, themeKind)
+      sendStreamMessage(panel, aiMessageId, '', '', false, themeKind)
+
+      // 准备发送给API的消息，包含历史上下文
+      // 使用messageManager获取上下文消息，限制上下文消息数量，避免token超限
+      const contextMessages = messages.slice(-20) // 最多保留最近20条消息
+
+      // 如果没有系统消息，添加默认系统消息
+      if (!contextMessages.some((m) => m.role === 'system')) {
+        contextMessages.unshift({
+          id: 'system-' + Date.now().toString(),
+          role: 'system',
+          content:
+            '你是一个专业的写作助手，能够帮助用户理解和改进他们的文本内容。',
+          timestamp: Date.now(),
+        })
+      }
 
       // 使用 Node.js https 模块替换 fetch，支持流式响应
-      const url = new URL(aiConfig.apiUrl)
+      const url = new URL(apiUrl)
       const postData = JSON.stringify({
-        model: aiConfig.model,
-        messages: [
-          {
-            role: 'system',
-            content:
-              '你是一个专业的写作助手，能够帮助用户理解和改进他们的文本内容。',
-          },
-          {
-            role: 'user',
-            content: userMessage.content,
-          },
-        ],
+        model: model,
+        messages: contextMessages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
         temperature: 0.7,
         max_tokens: 1000,
         stream: true, // 启用流式响应
@@ -138,7 +194,7 @@ export const newAIResponse = async (
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${aiConfig.apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           'Content-Length': Buffer.byteLength(postData),
         },
       }
@@ -165,7 +221,6 @@ export const newAIResponse = async (
                   aiMessageId,
                   aiContent,
                   reasoningContent,
-                  true,
                   true,
                   themeKind,
                 )
@@ -201,7 +256,6 @@ export const newAIResponse = async (
                     aiContent,
                     reasoningContent,
                     false,
-                    false,
                     themeKind,
                   )
                 }
@@ -220,7 +274,6 @@ export const newAIResponse = async (
                     aiContent,
                     reasoningContent,
                     false,
-                    isReasoningComplete,
                     themeKind,
                   )
                 }
@@ -264,7 +317,6 @@ export const newAIResponse = async (
             aiMessageId,
             aiContent,
             reasoningContent,
-            true,
             true,
             themeKind,
           )

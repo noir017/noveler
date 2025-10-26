@@ -146,7 +146,14 @@ export interface ChatMessage {
 }
 
 export interface AIChatExtRecDto {
-  type: 'message' | 'clear' | 'getConfig' | 'saveConfig' | 'stop'
+  type:
+    | 'message'
+    | 'clear'
+    | 'getConfig'
+    | 'saveConfig'
+    | 'stop'
+    | 'newSession'
+    | 'switchSession'
   message?: ChatMessage
   config?: AIConfig
 }
@@ -159,13 +166,31 @@ export interface AIStreamDto {
   isComplete: boolean
   themeKind?: Theme
   reasoning_content?: string // 深度思考内容
-  isReasoningComplete?: boolean // 深度思考是否完成
+}
+
+// API提供商接口
+export interface ApiProvider {
+  id: string
+  name: string
+  apiUrl: string
+  apiKey: string
+  models: Model[]
+  isActive: boolean
+}
+
+// 模型接口
+export interface Model {
+  id: string
+  name: string
+  isActive: boolean
 }
 
 export interface AIConfig {
-  apiUrl: string
-  apiKey: string
-  model: string
+  // 新的多提供商配置
+  apiProviders?: ApiProvider[]
+  selectedProviderId?: string
+  selectedModelId?: string
+
   prompts?: {
     randomName?: {
       withSelection?: string

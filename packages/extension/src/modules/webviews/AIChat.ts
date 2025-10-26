@@ -6,6 +6,8 @@ import {
   ChatMessage,
   Commands,
   Theme,
+  ApiProvider,
+  Model,
 } from 'common/types'
 import {
   newAIResponse,
@@ -13,12 +15,12 @@ import {
   colorThemeKind2Theme,
   stopCurrentRequest,
 } from '../ai'
+import { messageManager, ChatSession } from '../ai/messageManager'
 import { log } from 'console'
 
 let currentPanel: vscode.WebviewPanel | undefined = undefined
 let context: vscode.ExtensionContext | undefined = undefined
 let disposables: vscode.Disposable[] | undefined = undefined
-let messages: ChatMessage[] = []
 
 // 获取选中文本及其上下文
 const getSelectedTextWithContext = (): string | null => {
@@ -136,7 +138,6 @@ const replacePromptPlaceholders = (template: string): string => {
   const selectedTextWithContext = getSelectedTextWithContext() || ''
   const contentText = getContentText() || ''
   const paragraphText = getParagraphText() || ''
-  // console.log('selectedText,selectedTextWithContext,contentText,paragraphText',selectedText,selectedTextWithContext,contentText,paragraphText);
 
   return template
     .replace(/\${selectedText}/g, selectedText)
@@ -145,9 +146,19 @@ const replacePromptPlaceholders = (template: string): string => {
     .replace(/\${paragraphText}/g, paragraphText)
 }
 
-const init = (cnt: vscode.ExtensionContext) => {
+const init = async (cnt: vscode.ExtensionContext) => {
   context = cnt
   disposables = []
+
+  // 初始化消息管理器
+  await messageManager
+    .initialize()
+    .then(() => {
+      console.log('消息管理器初始化完成')
+    })
+    .catch((error) => {
+      console.error('消息管理器初始化失败:', error)
+    })
 
   const panel = vscode.window.createWebviewPanel(
     'NovelerAIChat',
@@ -160,6 +171,9 @@ const init = (cnt: vscode.ExtensionContext) => {
   )
 
   panel.webview.html = createWebviewHtml('/ai-chat', panel.webview, context)
+
+  // 等待一秒，确保webview完全加载
+  await new Promise((resolve) => setTimeout(resolve, 1000))
 
   // 发送初始数据
   const themeKind = colorThemeKind2Theme(vscode.window.activeColorTheme.kind)
@@ -202,10 +216,7 @@ const init = (cnt: vscode.ExtensionContext) => {
   return panel
 }
 
-const showWebview = async (
-  context: vscode.ExtensionContext,
-  customPrompt?: string,
-) => {
+const showWebview = async (context: vscode.ExtensionContext) => {
   // 获取当前编辑器的列位置
   const activeEditorColumn = vscode.window.activeTextEditor
     ? vscode.window.activeTextEditor.viewColumn
@@ -223,7 +234,7 @@ const showWebview = async (
       )
     }
   } else {
-    currentPanel = init(context)
+    currentPanel = await init(context)
 
     // 创建面板后，保持当前编辑器的焦点
     if (vscode.window.activeTextEditor) {
@@ -233,83 +244,46 @@ const showWebview = async (
       )
     }
   }
+}
 
-  // 如果提供了自定义prompt，则使用它；否则使用默认行为
-  if (customPrompt) {
-    // 替换prompt模板中的占位符
-    const question = replacePromptPlaceholders(customPrompt)
+const postQuestion = async (question: string) => {
+  // 发送问题到 webview
+  if (currentPanel) {
+    const message: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: question,
+      timestamp: Date.now(),
+    }
 
-    // 发送问题到 webview
-    if (currentPanel) {
-      const message: ChatMessage = {
-        id: Date.now().toString(),
-        role: 'user',
-        content: question,
-        timestamp: Date.now(),
-      }
+    // 发送用户消息到 webview
+    currentPanel.webview.postMessage({
+      type: 'message',
+      message: message,
+    })
 
-      // 发送用户消息到 webview
-      currentPanel.webview.postMessage({
-        type: 'message',
-        message: message,
-      })
+    console.log('postMessage', question, message)
 
-      console.log('postMessage', question, message)
-
-      // 添加到消息列表并处理
-      messages.push(message)
-      newAIResponse(message, currentPanel!, messages)
+    // 添加到消息管理器并处理
+    messageManager.addMessage(message)
+    const session = messageManager.getCurrentSession()
+    if (session) {
+      newAIResponse(message, currentPanel!, session.messages)
     }
   }
-  // else {
-  //   console.log('检查是否有选中文本，如果有则自动添加到输入框');
-
-  //   // 默认行为：检查是否有选中文本，如果有则自动添加到输入框
-  //   const selectedTextWithContext = getSelectedTextWithContext()
-  //   if (selectedTextWithContext) {
-  //     console.log("selectedTextWithContext",selectedTextWithContext);
-
-  //     const editor = vscode.window.activeTextEditor
-  //     if (editor && !editor.selection.isEmpty) {
-  //       console.log('const editor = vscode.window.activeTextEditor',vscode.window.activeTextEditor);
-
-  //       const selectedText = editor.document.getText(editor.selection)
-
-  //       // 使用默认prompt模板
-  //       const defaultPrompt = '[${selectedTextWithContext}]解释以上内容，并说明[${selectedText}]'
-  //       const question = replacePromptPlaceholders(defaultPrompt)
-
-  //       // 发送问题到 webview
-  //       if (currentPanel) {
-  //         const message: ChatMessage = {
-  //           id: Date.now().toString(),
-  //           role: 'user',
-  //           content: question,
-  //           timestamp: Date.now(),
-  //         }
-
-  //         // 发送用户消息到 webview
-  //         // 有个小bug，在开启新webview时，这个消息会丢失，但影响不大，就暂时不修了吧
-  //         currentPanel.webview.postMessage({
-  //           type: 'message',
-  //           message: message,
-  //         })
-
-  //         console.log('postMessage', question, message)
-
-  //         // 添加到消息列表并处理
-  //         messages.push(message)
-  //         newAIResponse(message, currentPanel!, messages)
-  //       }
-  //     }
-  //   }
-  // }
 }
 
 const sendInitialData = (themeKind: Theme) => {
   if (currentPanel) {
+    let session = messageManager.getCurrentSession()
+
+    // 如果没有当前会话，创建一个默认会话
+    if (!session) {
+      session = messageManager.createSession('默认对话')
+    }
+
     const dto: AIChatDto = {
-      messages,
+      messages: session ? session.messages : [],
       themeKind,
     }
     currentPanel.webview.postMessage(dto)
@@ -327,8 +301,7 @@ const sendThemeUpdate = (themeKind: Theme) => {
 
 const handleWebviewMessage = (message: AIChatExtRecDto) => {
   switch (message.type) {
-    case 'getConfig':
-      // 发送配置到 webview
+    case 'getConfig': { // 发送配置到 webview
       const config = getAIConfig()
       if (currentPanel) {
         currentPanel.webview.postMessage({
@@ -337,67 +310,138 @@ const handleWebviewMessage = (message: AIChatExtRecDto) => {
         })
       }
       break
-    case 'saveConfig':
+    }
+    case 'saveConfig': {
       // 保存配置
       const configToSave = message.config
+      console.log('收到保存配置:', configToSave)
+
       if (configToSave) {
-        vscode.workspace
-          .getConfiguration('noveler')
-          .update(
-            'ai.apiUrl',
-            configToSave.apiUrl,
-            vscode.ConfigurationTarget.Global,
-          )
-        vscode.workspace
-          .getConfiguration('noveler')
-          .update(
-            'ai.apiKey',
-            configToSave.apiKey,
-            vscode.ConfigurationTarget.Global,
-          )
-        vscode.workspace
-          .getConfiguration('noveler')
-          .update(
-            'ai.model',
-            configToSave.model,
-            vscode.ConfigurationTarget.Global,
-          )
+        // 保存多提供商配置
+        if (configToSave.apiProviders) {
+          vscode.workspace
+            .getConfiguration('noveler')
+            .update('ai.apiProviders', configToSave.apiProviders)
+        }
+
+        // 保存选中的提供商和模型
+        if (configToSave.selectedProviderId !== undefined) {
+          vscode.workspace
+            .getConfiguration('noveler')
+            .update('ai.selectedProviderId', configToSave.selectedProviderId)
+        }
+
+        if (configToSave.selectedModelId !== undefined) {
+          vscode.workspace
+            .getConfiguration('noveler')
+            .update('ai.selectedModelId', configToSave.selectedModelId)
+        }
 
         // 保存prompts配置
         if (configToSave.prompts) {
           vscode.workspace
             .getConfiguration('noveler')
-            .update(
-              'ai.prompts',
-              configToSave.prompts,
-              vscode.ConfigurationTarget.Global,
-            )
+            .update('ai.prompts', configToSave.prompts)
         }
 
         vscode.window.showInformationMessage('AI 配置已保存')
       }
       break
+    }
     case 'message':
       // 处理用户消息
       if (message.message) {
-        messages.push(message.message)
-        newAIResponse(message.message, currentPanel!, messages)
+        messageManager.addMessage(message.message)
+        const session = messageManager.getCurrentSession()
+        log(
+          '收到用户消息:',
+          message.message,
+          '所有消息:',
+          session ? session.messages : [],
+        )
+
+        if (session) {
+          newAIResponse(message.message, currentPanel!, session.messages)
+        }
       }
       break
     case 'clear':
-      // 清空消息列表
-      messages = []
+      // 清空当前会话的消息
+      messageManager.clearCurrentSession()
       if (currentPanel) {
         currentPanel.webview.postMessage({
           type: 'cleared',
         })
       }
       break
+    case 'newSession':
+      // 创建新会话
+      createNewSession()
+      break
     case 'stop':
       // 停止当前的AI响应
       stopCurrentRequest()
       break
   }
+}
+
+// 创建新会话
+const createNewSession = () => {
+  const session = messageManager.createSession('新对话')
+  messageManager.switchSession(session.id)
+  // 如果有打开的webview，发送新会话消息
+  if (currentPanel) {
+    // 添加分割线消息表示新会话开始
+    const dividerMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'system',
+      content: `———————————— ${session.title} ————————————`,
+      timestamp: Date.now(),
+    }
+
+    // 发送分割线消息到webview
+    currentPanel.webview.postMessage({
+      type: 'message',
+      message: dividerMessage,
+    })
+  }
+  // vscode.window.showInformationMessage(`已创建新对话: ${session.title}`)
+}
+
+// 通用AI命令处理函数
+const handleAICommand = async (
+  context: vscode.ExtensionContext,
+  promptType:
+    | 'randomName'
+    | 'wordReplace'
+    | 'continueWriting'
+    | 'characterDesign',
+) => {
+  createNewSession()
+  const editor = vscode.window.activeTextEditor
+
+  const config = getAIConfig()
+  let prompt = ''
+
+  if (!editor || editor.selection.isEmpty) {
+    // 未选中文本的情况
+    prompt = config.prompts?.[promptType]?.withoutSelection || ''
+  } else {
+    // 有选中文本的情况
+    prompt = config.prompts?.[promptType]?.withSelection || ''
+  }
+
+  // 检查prompt是否为空
+  if (prompt === '') {
+    vscode.window.showErrorMessage(`配置错误：${promptType} 提示词不能为空`)
+    return
+  }
+
+  // 替换prompt模板中的占位符
+  const question = replacePromptPlaceholders(prompt)
+
+  await showWebview(context)
+  await postQuestion(question)
 }
 
 export const provider = (context: vscode.ExtensionContext) => {
@@ -408,90 +452,25 @@ export const provider = (context: vscode.ExtensionContext) => {
     commandRandomName: vscode.commands.registerCommand(
       Commands.AIRandomName,
       async () => {
-        const editor = vscode.window.activeTextEditor
-        const config = getAIConfig()
-        let prompt = ''
-
-        if (!editor || editor.selection.isEmpty) {
-          // 未选中文本的情况
-          prompt =
-            config.prompts?.randomName?.withoutSelection ||
-            '请随机生成十个人物姓名'
-        } else {
-          // 有选中文本的情况
-          prompt =
-            config.prompts?.randomName?.withSelection ||
-            '请根据以下内容生成相关人物姓名：\n${selectedText}'
-        }
-
-        await showWebview(context, prompt)
+        await handleAICommand(context, 'randomName')
       },
     ),
     commandWordReplace: vscode.commands.registerCommand(
       Commands.AIWordReplace,
       async () => {
-        const editor = vscode.window.activeTextEditor
-        const config = getAIConfig()
-        let prompt = ''
-
-        if (!editor || editor.selection.isEmpty) {
-          // 未选中文本的情况
-          prompt =
-            config.prompts?.wordReplace?.withoutSelection ||
-            '请提供一些词汇替换建议'
-          await showWebview(context, prompt)
-          return
-        } else {
-          // 有选中文本的情况
-          prompt =
-            config.prompts?.wordReplace?.withSelection ||
-            '[${paragraphText}]\n${selectedText}能替换成什么？'
-          await showWebview(context, prompt)
-        }
+        await handleAICommand(context, 'wordReplace')
       },
     ),
     commandContinueWriting: vscode.commands.registerCommand(
       Commands.AIContinueWriting,
       async () => {
-        const editor = vscode.window.activeTextEditor
-        const config = getAIConfig()
-        let prompt = ''
-
-        if (!editor || editor.selection.isEmpty) {
-          // 未选中文本的情况
-          prompt =
-            config.prompts?.continueWriting?.withoutSelection ||
-            '请根据当前文档内容继续续写'
-        } else {
-          // 有选中文本的情况
-          prompt =
-            config.prompts?.continueWriting?.withSelection ||
-            '请根据以下内容继续续写：\n${selectedText}'
-        }
-
-        await showWebview(context, prompt)
+        await handleAICommand(context, 'continueWriting')
       },
     ),
     commandCharacterDesign: vscode.commands.registerCommand(
       Commands.AICharacterDesign,
       async () => {
-        const editor = vscode.window.activeTextEditor
-        const config = getAIConfig()
-        let prompt = ''
-
-        if (!editor || editor.selection.isEmpty) {
-          // 未选中文本的情况
-          prompt =
-            config.prompts?.characterDesign?.withoutSelection ||
-            '请帮我设计一个小说角色'
-        } else {
-          // 有选中文本的情况
-          prompt =
-            config.prompts?.characterDesign?.withSelection ||
-            '请根据以下内容设计一个角色：\n${selectedText}'
-        }
-
-        await showWebview(context, prompt)
+        await handleAICommand(context, 'characterDesign')
       },
     ),
   }

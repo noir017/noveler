@@ -66,6 +66,23 @@
   color: var(--vscode-button-foreground);
 }
 
+/* 系统消息（分割线）样式 */
+.system-message {
+  margin: 16px 0;
+  text-align: center;
+}
+
+.system-divider {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 /* 清除按钮样式 */
 .clear-button {
   background-color: var(--vscode-button-secondaryBackground);
@@ -78,6 +95,21 @@
 }
 
 .clear-button:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+/* 新对话按钮样式 */
+.new-session-button {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.new-session-button:hover {
   background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
@@ -249,7 +281,7 @@
 }
 
 .config-note {
-  margin-top: 12px;
+  margin: 12px 0px;
   padding: 8px;
   background-color: var(--vscode-textBlockQuote-background);
   border-left: 4px solid var(--vscode-textBlockQuote-border);
@@ -436,4 +468,189 @@
 
 .send-button.stop-button:hover:not(:disabled) {
   background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+/* API提供商和模型管理样式 */
+.provider-list {
+  margin-bottom: 16px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-header h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.add-button {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.add-button:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.empty-message {
+  font-style: italic;
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+  margin: 8px 0;
+}
+
+.provider-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.provider-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.provider-tab:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.provider-tab.active {
+  background-color: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+  border-color: var(--vscode-focusBorder);
+}
+
+.provider-name {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.provider-config {
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.model-list {
+  margin-top: 16px;
+}
+
+.model-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.model-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.model-name-input {
+  flex: 1;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+
+.model-name-input:focus {
+  border-color: var(--vscode-focusBorder);
+  outline: none;
+}
+
+/* 增加radio按钮的点击区域 */
+input[type='radio'] {
+  transform: scale(1.2);
+  margin-right: 4px;
+  cursor: pointer;
+}
+
+/* 为radio标签添加更大的点击区域 */
+.radio-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex: 1;
+}
+
+/* 为provider-tab中的radio按钮添加更大的点击区域 */
+.provider-tab .radio-label {
+  margin: 0;
+}
+
+/* 为model-item中的radio按钮添加更大的点击区域 */
+.model-item .radio-label {
+  gap: 8px;
+}
+
+.delete-button {
+  background-color: transparent;
+  color: var(--vscode-descriptionForeground);
+  border: 1px solid var(--vscode-input-border);
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 20px;
+}
+
+.delete-button:hover {
+  background-color: var(--vscode-errorForeground);
+  color: var(--vscode-button-foreground);
+  opacity: 0.8;
+}
+
+/* 验证错误信息样式 */
+.validation-errors {
+  margin: 12px 0;
+  padding: 12px;
+  background-color: var(--vscode-inputValidation-errorBackground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  border-radius: 4px;
+}
+
+.validation-errors h4 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-errorForeground);
+}
+
+.validation-errors ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.validation-errors li {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--vscode-errorForeground);
 }
