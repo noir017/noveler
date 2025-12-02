@@ -9,68 +9,24 @@
  */
 
 import * as vscode from 'vscode'
-import * as confHandler from '@/modules/ConfigHandler'
-import * as statusBar from '@/modules/StatusBar'
-import * as formatter from '@/modules/Formatter'
-import * as indention from '@/modules/Indention'
-import * as preview from '@/modules/webviews/Preview'
 import * as aiChat from '@/modules/webviews/AIChat'
-import * as decoration from '@/modules/Decoration'
-import * as completion from '@/modules/Completion'
-import * as CSVReader from '@/modules/reader/CSVReader'
-import * as TXTReader from '@/modules/reader/TXTReader'
-import * as FileExport from '@/modules/export/Export'
-import * as diagnostic from '@/modules/Diagnostic'
-import * as panel from '@/modules/webviews/Panel'
-import { Commands } from 'common/types'
-import * as os from 'os'
 
 export let initing = false
 
 // this method is called when vs code is activated
 export const activate = async (context: vscode.ExtensionContext) => {
   initing = true
-  const editor = vscode.window.activeTextEditor
-  await confHandler.askForPlaintextConf()
   // ------------------ setcontext ------------------
-  const previewProvider = preview.provider(context)
   const aiChatProvider = aiChat.provider(context)
-  completion.setContext(context)
-  panel.init(context, os.platform(), editor)
   // ------------------ register ------------------
   context.subscriptions.push(
-    formatter.provider,
-    indention.provider,
-    statusBar.init(),
-    statusBar.change,
-    statusBar.changeConf,
-    statusBar.changeEditor,
-    previewProvider.command,
-    previewProvider.onChangeConf,
-    previewProvider.onChangeDocument,
-    previewProvider.onChangeEditor,
-    previewProvider.onScroll,
     aiChatProvider.command,
     aiChatProvider.commandRandomName,
     aiChatProvider.commandWordReplace,
     aiChatProvider.commandContinueWriting,
     aiChatProvider.commandCharacterDesign,
-    decoration.onChangeConf,
-    decoration.onChangeDocument,
-    CSVReader.reloadCommand,
-    CSVReader.onChangeConf,
-    TXTReader.reloadCommand,
-    FileExport.exportCommand,
-    completion.deletePrefixCommand,
-    diagnostic.onChangeEditor,
-    diagnostic.onChangeDocument,
-    diagnostic.onChangConf,
-    diagnostic.onChangeConfDocument,
   )
-  // ------------------ extension-init ------------------
-  CSVReader.loadFile()
-  TXTReader.loadFile()
   initing = false
 }
 
-// export const deactivate = () => {}
+export const deactivate = () => {}
